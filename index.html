@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Navigation — Port de Montréal</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:      #080c10;
+      --surface: #0d1117;
+      --surface2:#111820;
+      --border:  #1c2433;
+      --accent:  #3b82f6;
+      --accent2: #06b6d4;
+      --text:    #e2e8f0;
+      --label:   #8faabf;
+      --muted:   #67829e;
+      --ok:      #22c55e;
+      --warn:    #f59e0b;
+      --err:     #ef4444;
+      --orange:  #fb923c;
+      --mono:    'DM Mono', monospace;
+      --sans:    'DM Sans', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Header ── */
+    header {
+      padding: 16px 20px 13px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      z-index: 10;
+    }
+
+    .header-left { display: flex; flex-direction: column; gap: 2px; }
+
+    .header-title {
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 0.15em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .header-title span { color: var(--accent2); }
+
+    .header-date {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    #btn-refresh {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 6px;
+      padding: 7px 14px;
+      font-family: var(--mono);
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      transition: border-color 0.2s, color 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #btn-refresh:hover  { border-color: var(--accent); color: var(--accent); }
+    #btn-refresh:active { opacity: 0.7; }
+    #btn-refresh.loading .icon-refresh { animation: spin 0.8s linear infinite; }
+    @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
+    /* ── Onglets ── */
+    .tab-bar {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+      position: sticky;
+      top: 55px;
+      z-index: 9;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .tab-bar::-webkit-scrollbar { display: none; }
+
+    .tab-btn {
+      flex-shrink: 0;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 10px 18px;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--accent2); border-bottom-color: var(--accent2); }
+
+    /* ── Pages ── */
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* ── Alerte ── */
+    .alert-banner {
+      display: none;
+      margin: 12px 20px 0;
+      border-radius: 8px;
+      border: 1px solid #7f1d1d;
+      background: #1a0a0a;
+      overflow: hidden;
+      max-width: 560px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .alert-banner.visible { display: block; }
+
+    .alert-header {
+      background: #7f1d1d;
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      color: #fca5a5;
+      text-transform: uppercase;
+      font-weight: 500;
+    }
+    .alert-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #ef4444;
+      animation: blink 1s ease infinite;
+      flex-shrink: 0;
+    }
+    .alert-body {
+      padding: 10px 14px 12px;
+      font-family: var(--sans);
+      font-size: 14px;
+      color: #fca5a5;
+      line-height: 1.6;
+    }
+
+    /* ── Main ── */
+    main {
+      padding: 0 20px 24px;
+      display: flex;
+      flex-direction: column;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .section-title {
+      font-family: var(--mono);
+      font-size: 13px;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+      text-transform: uppercase;
+      padding: 18px 0 8px;
+    }
+
+    .cards-group { display: flex; flex-direction: column; gap: 10px; }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      animation: fadeUp 0.3s ease both;
+    }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+    .card-header {
+      padding: 11px 16px 10px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .card-title  { font-size: 13px; font-weight: 500; }
+    .card-source {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 3px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    /* ── Lien source ── */
+    .src-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--label);
+      text-decoration: none;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 7px;
+      transition: color 0.15s, border-color 0.15s;
+      white-space: nowrap;
+    }
+    .src-link:hover { color: var(--accent2); border-color: var(--accent2); }
+    .src-link svg { width: 10px; height: 10px; flex-shrink: 0; }
+
+    .status-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--muted); flex-shrink: 0;
+      transition: background 0.3s;
+    }
+    .status-dot.ok   { background: var(--ok);  box-shadow: 0 0 6px var(--ok); }
+    .status-dot.err  { background: var(--err); box-shadow: 0 0 6px var(--err); }
+    .status-dot.load { background: var(--warn); animation: blink 1s ease infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
+
+    /* ── Data grid ── */
+    .data-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: var(--border);
+    }
+    .data-cell {
+      background: var(--surface);
+      padding: 12px 16px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .data-cell.wide {
+      grid-column: 1 / -1;
+      background: var(--surface2);
+    }
+    .cell-label {
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 0.05em;
+      color: var(--label);
+      text-transform: uppercase;
+      font-weight: 500;
+    }
+    .cell-value {
+      font-family: var(--mono);
+      font-size: 24px;
+      font-weight: 300;
+      color: var(--text);
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+    .cell-value.sm   { font-size: 18px; }
+    .cell-value .unit{ font-size: 12px; color: var(--muted); margin-left: 2px; font-weight: 400; }
+    .cell-value.blue { color: var(--accent2); }
+    .cell-value.warm { color: var(--orange); }
+    .cell-value.red  { color: var(--err); }
+    .cell-value.green{ color: var(--ok); }
+    .cell-value.na   { color: var(--muted); font-size: 14px; padding-top: 4px; }
+    .cell-time {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    /* ── Prévision texte ── */
+    .forecast-text-block {
+      padding: 12px 16px;
+      font-family: var(--sans);
+      font-size: 12px;
+      color: #94a3b8;
+      line-height: 1.65;
+      border-top: 1px solid var(--border);
+    }
+    .forecast-text-block strong { color: var(--label); font-weight: 500; }
+
+    /* ── Horaires ── */
+    .hourly-scroll {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border-top: 1px solid var(--border);
+      scrollbar-width: none;
+    }
+    .hourly-scroll::-webkit-scrollbar { display: none; }
+    .hourly-row { display: flex; min-width: max-content; gap: 1px; background: var(--border); }
+    .hourly-cell {
+      background: var(--surface);
+      padding: 10px 14px;
+      display: flex; flex-direction: column; gap: 3px;
+      min-width: 70px; align-items: center; text-align: center;
+    }
+    .hourly-cell.now { background: var(--surface2); }
+    .hourly-time  { font-family: var(--mono); font-size: 9px;  color: var(--muted); }
+    .hourly-temp  { font-family: var(--mono); font-size: 15px; font-weight: 400; color: var(--text); }
+    .hourly-cond  { font-family: var(--sans); font-size: 10px; color: var(--label); }
+    .hourly-wind  { font-family: var(--mono); font-size: 9px;  color: var(--accent2); }
+
+    /* ── Open-Meteo conditions actuelles ── */
+    .om-current {
+      padding: 14px 16px 12px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+    }
+    .om-skeleton { min-height: 60px; }
+    .om-cur-temp {
+      font-family: var(--mono);
+      font-size: 36px;
+      font-weight: 300;
+      color: var(--text);
+      letter-spacing: -0.03em;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .om-cur-temp .unit { font-size: 16px; color: var(--muted); }
+    .om-cur-right { display: flex; flex-direction: column; gap: 3px; }
+    .om-cur-cond {
+      font-family: var(--sans);
+      font-size: 13px;
+      color: var(--label);
+    }
+    .om-cur-wind {
+      display: flex;
+      gap: 10px;
+      align-items: baseline;
+    }
+    .om-wind-val {
+      font-family: var(--mono);
+      font-size: 15px;
+      color: var(--accent2);
+    }
+    .om-wind-gust {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    /* ── Prévisions étendues compactes ── */
+    .extended-marine { border-top: 1px solid var(--border); }
+    .extended-marine .forecast-text-block {
+      font-size: 11px;
+      padding: 8px 14px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .extended-marine .forecast-text-block strong {
+      color: var(--label);
+      font-size: 10px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    /* ── Cellule horaire — ligne rafale + précip ── */
+    .hourly-gust   { font-family: var(--mono); font-size: 9px; color: var(--muted); }
+    .hourly-precip { font-family: var(--mono); font-size: 9px; color: var(--accent); }
+
+    /* ── Skeleton ── */
+    .skeleton {
+      height: 24px; width: 80px; border-radius: 4px;
+      background: linear-gradient(90deg,var(--border) 25%,#1e2d3d 50%,var(--border) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.3s infinite;
+    }
+    .skeleton.sm { height: 12px; width: 60px; }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+    .error-msg { font-family: var(--mono); font-size: 11px; color: var(--err); padding: 14px 16px; }
+
+    /* ── Footer ── */
+    footer {
+      padding: 12px 20px;
+      font-family: var(--mono); font-size: 9px; color: var(--muted);
+      border-top: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+      max-width: 600px; margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="header-title">PORT MTL — <span>Navigation</span></div>
+    <div class="header-date" id="header-date">—</div>
+  </div>
+  <button id="btn-refresh" onclick="rafraichirTout()">
+    <svg class="icon-refresh" width="12" height="12" viewBox="0 0 24 24"
+         fill="none" stroke="currentColor" stroke-width="2.5"
+         stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 2v6h-6M3 22v-6h6"/>
+      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L21 8M3 16l2.64 2.36A9 9 0 0 0 20.49 15"/>
+    </svg>
+    ACTUALISER
+  </button>
+</header>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchPage('montreal',this)">Longueuil</button>
+  <button class="tab-btn"        onclick="switchPage('lachine',this)">Lachine</button>
+  <button class="tab-btn"        onclick="switchPage('sorel',this)">Sorel-Tracy</button>
+</div>
+
+<!-- SVG externe icon réutilisable -->
+<svg style="display:none"><symbol id="ico-ext" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></svg>
+
+
+<!-- ════════════════════════════════════════
+     PAGE MONTRÉAL
+     ════════════════════════════════════════ -->
+<div class="page active" id="page-montreal">
+  <div class="alert-banner" id="alert-banner-mtl">
+    <div class="alert-header"><div class="alert-dot"></div><span id="alert-title-mtl">Alerte maritime</span></div>
+    <div class="alert-body" id="alert-body-mtl">—</div>
+  </div>
+  <main>
+    <div class="section-title">Journal de bord</div>
+    <div class="cards-group">
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Prévisions maritimes</div>
+            <div class="card-source">
+              <span id="src-marine-mtl">EC · Montréal à Trois-Rivières</span>
+              <a class="src-link" href="https://meteo.gc.ca/marine/forecast_f.html?mapID=12&siteID=10000" target="_blank" rel="noopener">
+                <svg width="8" height="8"><use href="#ico-ext"/></svg>Météo.gc.ca
+              </a>
+            </div>
+          </div>
+          <div class="status-dot load" id="dot-marine-mtl"></div>
+        </div>
+        <div id="body-marine-mtl">
+          <div class="data-grid">
+            <div class="data-cell wide"><div class="cell-label">Vent</div><div class="skeleton"></div><div class="skeleton sm" style="margin-top:4px"></div></div>
+          </div>
+
+        <div id="body-extended-mtl" class="extended-marine"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Fleuve — Montréal Jetée #1</div>
+            <div class="card-source">
+              IWLS · Pêches et Océans Canada
+              <a class="src-link" href="https://www.marees.gc.ca/fr/stations/15520" target="_blank" rel="noopener">
+                <svg width="8" height="8"><use href="#ico-ext"/></svg>Marées.gc.ca
+              </a>
+            </div>
+          </div>
+          <div class="status-dot load" id="dot-iwls-mtl"></div>
+        </div>
+        <div id="body-iwls-mtl">
+          <div class="data-grid">
+            <div class="data-cell"><div class="cell-label">Hauteur d'eau</div><div class="skeleton"></div><div class="skeleton sm" style="margin-top:4px"></div></div>
+            <div class="data-cell"><div class="cell-label">Temp. eau</div><div class="skeleton"></div><div class="skeleton sm" style="margin-top:4px"></div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="section-title">Suivi — Prévisions horaires</div>
+    <div class="cards-group">
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Conditions &amp; Prévisions horaires</div>
+            <div class="card-source">
+              Open-Meteo · Marina de Longueuil
+              <a class="src-link" href="https://open-meteo.com" target="_blank" rel="noopener">
+                <svg width="8" height="8"><use href="#ico-ext"/></svg>Open-Meteo
+              </a>
+            </div>
+          </div>
+          <div class="status-dot load" id="dot-hourly-mtl"></div>
+        </div>
+        <div id="body-hourly-mtl">
+          <div class="om-current om-skeleton">
+            <div class="skeleton" style="width:70px;height:36px"></div>
+            <div class="skeleton sm" style="margin-top:6px;width:80px"></div>
+            <div class="skeleton sm" style="margin-top:4px;width:100px"></div>
+          </div>
+          <div class="hourly-scroll"><div class="hourly-row">
+            <div class="hourly-cell"><div class="skeleton sm"></div><div class="skeleton" style="width:40px;height:18px;margin-top:4px"></div><div class="skeleton sm" style="margin-top:4px"></div></div>
+            <div class="hourly-cell"><div class="skeleton sm"></div><div class="skeleton" style="width:40px;height:18px;margin-top:4px"></div><div class="skeleton sm" style="margin-top:4px"></div></div>
+            <div class="hourly-cell"><div class="skeleton sm"></div><div class="skeleton" style="width:40px;height:18px;margin-top:4px"></div><div class="skeleton sm" style="margin-top:4px"></div></div>
+          </div></div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+
+<!-- ════════════════════════════════════════
+     PAGE LACHINE
+     ════════════════════════════════════════ -->
+<div class="page" id="page-lachine">
+  <div class="alert-banner" id="alert-banner-lac">
+    <div class="alert-header"><div class="alert-dot"></div><span id="alert-title-lac">Alerte maritime</span></div>
+    <div class="alert-body" id="alert-body-lac">—</div>
+  </div>
+  <main>
+    <div class="section-title">Journal de bord</div>
+    <div class="cards-group">
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Prévisions maritimes</div>
+            <div class="card-source">
+              <span id="src-marine-lac">EC · Cornwall à Montréal</span>
+              <a class="src-link" href="https://meteo.gc.ca/marine/forecast_f.html?mapID=12&siteID=02900" target="_blank" rel="noopener">
+                <svg width="8" height="8"><use href="#ico-ext"/></svg>Météo.gc.ca
+              </a>
+            </div>
+          </div>
+          <div class="status-dot load" id="dot-marine-lac"></div>
+        </div>
+        <div id="body-marine-lac">
+          <div class="data-grid">
+            <div class="data-cell wide"><div class="cell-label">Vent</div><div class="skeleton"></div><div class="skeleton sm" style="margin-top:4px"></div></div>
+          </div>
+
+        <div id="body-extended-lac" class="extended-marine"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Lac Saint-Louis — Pointe-Claire</div>
+            <div class="card-source">
+              IWLS · Pêches et Océans Canada
+              <a class="src-link" href="https://www.marees.gc.ca/fr/stations/15330" target="_blank" rel="noopener">
+                <svg width="8" height="8"><use href="#ico-ext"/></svg>Marées.gc.ca
+              </a>
+            </div>
+          </div>
+          <div class="status-dot load" id="dot-iwls-lac"></div>
+        </div>
+        <div id="body-iwls-lac">
+          <div class="data-grid">
+            <div class="data-cell"><div class="cell-label">Hauteur d'eau</div><div class="skeleton"></div><div class="skeleton sm" style="margin-top:4px"></div></div>
+            <div class="data-cell"><div class="cell-label">Temp. eau</div><div class="skeleton"></div><div class="skeleton sm" style="margin-top:4px"></div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="section-title">Suivi — Prévisions horaires</div>
+    <div class="cards-group">
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Conditions &amp; Prévisions horaires</div>
+            <div class="card-source">
+              Open-Meteo · Marina de Lachine
+              <a class="src-link" href="https://open-meteo.com" target="_blank" rel="noopener">
+                <svg width="8" height="8"><use href="#ico-ext"/></svg>Open-Meteo
+              </a>
+            </div>
+          </div>
+          <div class="status-dot load" id="dot-hourly-lac"></div>
+        </div>
+        <div id="body-hourly-lac">
+          <div class="om-current om-skeleton">
+            <div class="skeleton" style="width:70px;height:36px"></div>
+            <div class="skeleton sm" style="margin-top:6px;width:80px"></div>
+            <div class="skeleton sm" style="margin-top:4px;width:100px"></div>
+          </div>
+          <div class="hourly-scroll"><div class="hourly-row">
+            <div class="hourly-cell"><div class="skeleton sm"></div><div class="skeleton" style="width:40px;height:18px;margin-top:4px"></div><div class="skeleton sm" style="margin-top:4px"></div></div>
+            <div class="hourly-cell"><div class="skeleton sm"></div><div class="skeleton" style="width:40px;height:18px;margin-top:4px"></div><div class="skeleton sm" style="margin-top:4px"></div></div>
+            <div class="hourly-cell"><div class="skeleton sm"></div><div class="skeleton" style="width:40px;height:18px;margin-top:4px"></div><div class="skeleton sm" style="margin-top:4px"></div></div>
+          </div></div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+
+<!-- ════════════════════════════════════════
+     PAGE SOREL-TRACY
+     ════════════════════════════════════════ -->
+<div class="page" id="page-sorel">
+  <div class="alert-banner" id="alert-banner-sor">
+    <div class="alert-header"><div class="alert-dot"></div><span id="alert-title-sor">Alerte maritime</span></div>
+    <div class="alert-body" id="alert-body-sor">—</div>
+  </div>
+  <main>
+    <div class="section-title">Journal de bord</div>
+    <div class="cards-group">
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Prévisions maritimes</div>
+            <div class="card-source">
+              <span id="src-marine-sor">EC · Montréal à Trois-Rivières</span>
+              <a class="src-link" href="https://meteo.gc.ca/marine/forecast_f.html?mapID=12&siteID=10000" target="_blank" rel="noopener">
+                <svg width="8" height="8"><use href="#ico-ext"/></svg>Météo.gc.ca
+              </a>
+            </div>
+          </div>
+          <div class="status-dot load" id="dot-marine-sor"></div>
+        </div>
+        <div id="body-marine-sor">
+          <div class="data-grid">
+            <div class="data-cell wide"><div class="cell-label">Vent</div><div class="skeleton"></div><div class="skeleton sm" style="margin-top:4px"></div></div>
+          </div>
+
+        <div id="body-extended-sor" class="extended-marine"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Fleuve Saint-Laurent — Sorel</div>
+            <div class="card-source">
+              IWLS · Pêches et Océans Canada
+              <a class="src-link" href="https://www.marees.gc.ca/fr/stations/15930" target="_blank" rel="noopener">
+                <svg width="8" height="8"><use href="#ico-ext"/></svg>Marées.gc.ca
+              </a>
+            </div>
+          </div>
+          <div class="status-dot load" id="dot-iwls-sor"></div>
+        </div>
+        <div id="body-iwls-sor">
+          <div class="data-grid">
+            <div class="data-cell"><div class="cell-label">Hauteur d'eau</div><div class="skeleton"></div><div class="skeleton sm" style="margin-top:4px"></div></div>
+            <div class="data-cell"><div class="cell-label">Temp. eau</div><div class="skeleton"></div><div class="skeleton sm" style="margin-top:4px"></div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="section-title">Suivi — Prévisions horaires</div>
+    <div class="cards-group">
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Conditions &amp; Prévisions horaires</div>
+            <div class="card-source">
+              Open-Meteo · Quai de Sorel-Tracy
+              <a class="src-link" href="https://open-meteo.com" target="_blank" rel="noopener">
+                <svg width="8" height="8"><use href="#ico-ext"/></svg>Open-Meteo
+              </a>
+            </div>
+          </div>
+          <div class="status-dot load" id="dot-hourly-sor"></div>
+        </div>
+        <div id="body-hourly-sor">
+          <div class="om-current om-skeleton">
+            <div class="skeleton" style="width:70px;height:36px"></div>
+            <div class="skeleton sm" style="margin-top:6px;width:80px"></div>
+            <div class="skeleton sm" style="margin-top:4px;width:100px"></div>
+          </div>
+          <div class="hourly-scroll"><div class="hourly-row">
+            <div class="hourly-cell"><div class="skeleton sm"></div><div class="skeleton" style="width:40px;height:18px;margin-top:4px"></div><div class="skeleton sm" style="margin-top:4px"></div></div>
+            <div class="hourly-cell"><div class="skeleton sm"></div><div class="skeleton" style="width:40px;height:18px;margin-top:4px"></div><div class="skeleton sm" style="margin-top:4px"></div></div>
+            <div class="hourly-cell"><div class="skeleton sm"></div><div class="skeleton" style="width:40px;height:18px;margin-top:4px"></div><div class="skeleton sm" style="margin-top:4px"></div></div>
+          </div></div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+
+<footer>
+  <span>EC · IWLS · Nav Canada</span>
+  <span id="last-update">—</span>
+</footer>
+
+<script>
+// ══════════════════════════════════════════════════════
+//  CONSTANTES
+// ══════════════════════════════════════════════════════
+const IWLS_BASE = 'https://api-iwls.dfo-mpo.gc.ca';
+
+const EC_MARINE_MTL_TRV = 'https://api.weather.gc.ca/collections/marineweather-realtime/items/m0000077?lang=fr&f=json';
+const EC_MARINE_CRN_MTL = 'https://api.weather.gc.ca/collections/marineweather-realtime/items/m0000049?lang=fr&f=json';
+
+// Open-Meteo — coordonnées exactes des marinas
+const OM_COORDS = {
+  mtl: { lat: 45.542001, lon: -73.513613 }, // Marina de Longueuil
+  lac: { lat: 45.429688, lon: -73.670775 }, // Marina de Lachine
+  sor: { lat: 46.049264, lon: -73.112247 }, // Quai de Sorel-Tracy
+};
+function omUrl(key) {
+  const { lat, lon } = OM_COORDS[key];
+  return `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}`
+    + `&current=temperature_2m,windspeed_10m,winddirection_10m,windgusts_10m,weathercode,precipitation`
+    + `&hourly=temperature_2m,windspeed_10m,winddirection_10m,windgusts_10m,precipitation_probability,weathercode`
+    + `&wind_speed_unit=kn&timezone=America%2FToronto&forecast_days=2`;
+}
+
+const IWLS_NAMES = {
+  mtl: 'Montreal jetee #1',
+  lac: null,   // recherche par code station 15330
+  sor: 'Sorel',
+};
+// Code de station CHS (utilisé comme fallback pour retrouver l'ID IWLS)
+const IWLS_CHS_CODES = {
+  lac: '15330',
+  sor: '15930',
+};
+
+const KMH_TO_KT = 0.539957;
+let iwlsIdCache   = {};
+let iwlsListCache = null;
+let isLoading     = false;
+
+// ══════════════════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════════════════
+function switchPage(page, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ══════════════════════════════════════════════════════
+//  UTILITAIRES
+// ══════════════════════════════════════════════════════
+function kmhToKt(v) { return v == null ? null : Math.round(v * KMH_TO_KT); }
+
+function heure(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleTimeString('fr-CA',
+    { hour: '2-digit', minute: '2-digit', timeZone: 'America/Toronto' });
+}
+
+function dateJour() {
+  return new Date().toLocaleDateString('fr-CA', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+    timeZone: 'America/Toronto'
+  });
+}
+
+function setDot(id, state) {
+  const el = document.getElementById(id);
+  if (el) el.className = 'status-dot ' + state;
+}
+
+function cellHTML(label, val, unit, cls, ts) {
+  if (val == null)
+    return `<div class="cell-label">${label}</div><div class="cell-value na">N/D</div>${ts ? `<div class="cell-time">${ts}</div>` : ''}`;
+  return `<div class="cell-label">${label}</div><div class="cell-value ${cls||''}">${val}<span class="unit">${unit||''}</span></div>${ts ? `<div class="cell-time">${ts}</div>` : ''}`;
+}
+
+// ══════════════════════════════════════════════════════
+//  IWLS
+// ══════════════════════════════════════════════════════
+async function getIWLSList() {
+  if (!iwlsListCache) {
+    const r = await fetch(`${IWLS_BASE}/api/v1/stations`);
+    iwlsListCache = await r.json();
+  }
+  return iwlsListCache;
+}
+
+async function getIWLSId(key) {
+  if (iwlsIdCache[key]) return iwlsIdCache[key];
+  const list = await getIWLSList();
+
+  let s;
+  // Cherche d'abord par code CHS (ex: "15330") dans les champs id ou code
+  if (IWLS_CHS_CODES[key]) {
+    const chsCode = IWLS_CHS_CODES[key];
+    s = list.find(st =>
+      st.code === chsCode ||
+      st.id   === chsCode ||
+      String(st.code) === String(chsCode)
+    );
+  }
+  // Sinon par nom (insensible à la casse, ignore accents via normalize)
+  if (!s && IWLS_NAMES[key]) {
+    const norm = v => v?.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    const target = norm(IWLS_NAMES[key]);
+    s = list.find(st =>
+      norm(st.alternativeName) === target ||
+      norm(st.officialName)    === target
+    );
+  }
+  if (!s) throw new Error(`Station IWLS introuvable (${key})`);
+  iwlsIdCache[key] = s.id;
+  return s.id;
+}
+
+async function fetchSerie(sid, code) {
+  const now  = new Date();
+  const to   = encodeURIComponent(now.toISOString().replace(/\.\d+Z$/, 'Z'));
+  // Fenêtre élargie à 3h pour les stations à mise à jour lente (ex: Pointe-Claire)
+  const from = encodeURIComponent(new Date(now - 3 * 3600000).toISOString().replace(/\.\d+Z$/, 'Z'));
+  const r = await fetch(
+    `${IWLS_BASE}/api/v1/stations/${sid}/data?time-series-code=${code}&from=${from}&to=${to}&resolution=ONE_MINUTE`
+  );
+  if (!r.ok) return null;
+  const d = await r.json();
+  const valid = d?.filter(x => x.value != null);
+  return valid?.length > 0 ? valid[valid.length - 1] : null;
+}
+
+async function chargerIWLS(key, bodyId, dotId) {
+  setDot(dotId, 'load');
+  try {
+    const sid = await getIWLSId(key);
+    const [niv, temp] = await Promise.all([
+      fetchSerie(sid, 'wlo'),
+      fetchSerie(sid, 'wt1'),
+    ]);
+    const nivVal  = niv?.value  != null ? parseFloat(niv.value).toFixed(2)  : null;
+    const tempVal = temp?.value != null ? parseFloat(temp.value).toFixed(1) : null;
+    document.getElementById(bodyId).innerHTML = `
+      <div class="data-grid">
+        <div class="data-cell">${cellHTML("Hauteur d'eau", nivVal, ' m', 'blue', heure(niv?.eventDate))}</div>
+        <div class="data-cell">${cellHTML('Temp. eau', tempVal, '°C', 'warm', heure(temp?.eventDate))}</div>
+      </div>`;
+    setDot(dotId, 'ok');
+  } catch(e) {
+    document.getElementById(bodyId).innerHTML = `<div class="error-msg">Erreur IWLS : ${e.message}</div>`;
+    setDot(dotId, 'err');
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  MARINE EC (générique)
+// ══════════════════════════════════════════════════════
+async function chargerMarine(url, cfg) {
+  setDot(cfg.dotMarine, 'load');
+  try {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const { properties: p } = await r.json();
+
+    // heure émission
+    const issued = p.regularForecast?.issuedDatetimeLocal;
+    if (issued) {
+      const el = document.getElementById(cfg.srcEl);
+      if (el) el.textContent += ' · émis ' + heure(issued);
+    }
+
+    // alertes
+    const evts = p.warnings?.locations?.[0]?.events || [];
+    const banner = document.getElementById(cfg.alertBanner);
+    if (evts.length > 0) {
+      const ev = evts[0];
+      document.getElementById(cfg.alertTitle).textContent =
+        (ev.type?.fr || ev.type?.en || 'Alerte') + ' ' + (ev.status?.fr || ev.status?.en || '');
+      document.getElementById(cfg.alertBody).textContent = ev.name?.fr || ev.name?.en || '—';
+      banner.classList.add('visible');
+    } else {
+      banner.classList.remove('visible');
+    }
+
+    // données régulières
+    const wc   = p.regularForecast?.locations?.[0]?.weatherCondition;
+    const wind = wc?.wind?.fr || wc?.wind?.en || null;
+    const visi = wc?.weatherVisibility?.fr || wc?.weatherVisibility?.en || null;
+
+    document.getElementById(cfg.bodyMarine).innerHTML = `
+      <div class="data-grid">
+        <div class="data-cell wide">
+          <div class="cell-label">Vent prévu (nœuds)</div>
+          <div class="cell-value sm" style="color:var(--accent2);line-height:1.4">${wind || '—'}</div>
+        </div>
+        ${visi ? `<div class="data-cell wide"><div class="cell-label">Visibilité / Précipitations</div><div class="cell-value na" style="font-size:12px;padding-top:4px">${visi}</div></div>` : ''}
+      </div>
+      ${wc?.periodOfCoverage?.fr ? `<div class="forecast-text-block"><strong>Période :</strong> ${wc.periodOfCoverage.fr}</div>` : ''}`;
+
+    // étendues — injectées dans body-extended à l'intérieur de la carte marine
+    const ext = p.extendedForecast?.locations?.[0]?.weatherCondition?.forecastPeriods || [];
+    const elExt = document.getElementById(cfg.bodyExtended);
+    if (elExt) {
+      elExt.innerHTML = ext.length > 0
+        ? ext.map(fp => `<div class="forecast-text-block"><strong>${fp.name?.fr || fp.name?.en}</strong> — ${fp.value?.fr || fp.value?.en || '—'}</div>`).join('')
+        : '';
+    }
+
+    setDot(cfg.dotMarine, 'ok');
+  } catch(e) {
+    const elM = document.getElementById(cfg.bodyMarine);
+    if (elM) elM.innerHTML = `<div class="error-msg">Erreur marine : ${e.message}</div>`;
+    const elE = document.getElementById(cfg.bodyExtended);
+    if (elE) elE.innerHTML = '';
+    setDot(cfg.dotMarine, 'err');
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  WMO WEATHERCODE → LIBELLÉ FR
+// ══════════════════════════════════════════════════════
+function wmoLabel(code) {
+  if (code == null) return '—';
+  if (code === 0)            return 'Ciel dégagé';
+  if (code === 1)            return 'Peu nuageux';
+  if (code === 2)            return 'Part. nuageux';
+  if (code === 3)            return 'Couvert';
+  if (code <= 48)            return 'Brouillard';
+  if (code <= 55)            return 'Bruine';
+  if (code <= 65)            return 'Pluie';
+  if (code <= 75)            return 'Neige';
+  if (code === 77)           return 'Grésil';
+  if (code <= 82)            return 'Averses';
+  if (code <= 86)            return 'Av. neige';
+  if (code === 95)           return 'Orage';
+  if (code >= 96)            return 'Orage/grêle';
+  return '—';
+}
+
+function degToCardFr(deg) {
+  if (deg == null) return '—';
+  const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSO','SO','OSO','O','ONO','NO','NNO'];
+  return dirs[Math.round(deg / 22.5) % 16];
+}
+
+// ══════════════════════════════════════════════════════
+//  OPEN-METEO (horaires + actuel)
+// ══════════════════════════════════════════════════════
+async function chargerOpenMeteo(key, bodyId, dotId) {
+  setDot(dotId, 'load');
+  try {
+    const r = await fetch(omUrl(key));
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d = await r.json();
+
+    const cur = d.current;
+    const H   = d.hourly;
+
+    // Index de l'heure actuelle dans le tableau horaire
+    const nowHourStr = new Date().toLocaleString('sv-SE', { timeZone: 'America/Toronto' })
+      .slice(0, 13).replace(' ', 'T') + ':00';
+    const nowIdx = H.time.indexOf(nowHourStr);
+    const startIdx = nowIdx >= 0 ? nowIdx : 0;
+    const endIdx   = Math.min(startIdx + 12, H.time.length);
+
+    // ── Ligne "Maintenant" ──
+    const curTemp = cur.temperature_2m?.toFixed(1) ?? '—';
+    const curSpd  = Math.round(cur.windspeed_10m) ?? '—';
+    const curGst  = Math.round(cur.windgusts_10m);
+    const curDir  = degToCardFr(cur.winddirection_10m);
+    const curCond = wmoLabel(cur.weathercode);
+
+    // ── Cellules horaires ──
+    let cells = '';
+    for (let i = startIdx; i < endIdx; i++) {
+      const t    = H.time[i];
+      const hr   = t.slice(11, 16); // "HH:MM"
+      const tmp  = H.temperature_2m[i]?.toFixed(1) ?? '—';
+      const spd  = Math.round(H.windspeed_10m[i]);
+      const gst  = Math.round(H.windgusts_10m[i]);
+      const dir  = degToCardFr(H.winddirection_10m[i]);
+      const prob = H.precipitation_probability[i];
+      const cond = wmoLabel(H.weathercode[i]);
+      const isNow = i === startIdx;
+      cells += `<div class="hourly-cell${isNow ? ' now' : ''}">
+        <div class="hourly-time">${hr}</div>
+        <div class="hourly-temp">${tmp}°</div>
+        <div class="hourly-cond">${cond}</div>
+        <div class="hourly-wind">${dir} ${spd} kt</div>
+        <div class="hourly-gust">Raf. ${gst} kt</div>
+        <div class="hourly-precip">${prob != null ? prob + ' %' : ''}</div>
+      </div>`;
+    }
+
+    document.getElementById(bodyId).innerHTML =
+      `<div class="om-current">
+        <div class="om-cur-temp">${curTemp}<span class="unit">°C</span></div>
+        <div class="om-cur-right">
+          <div class="om-cur-cond">${curCond}</div>
+          <div class="om-cur-wind">
+            <span class="om-wind-val">${curDir} ${curSpd} kt</span>
+            <span class="om-wind-gust">Raf. ${curGst} kt</span>
+          </div>
+        </div>
+      </div>
+      <div class="hourly-scroll"><div class="hourly-row">${cells}</div></div>`;
+
+    setDot(dotId, 'ok');
+  } catch(e) {
+    document.getElementById(bodyId).innerHTML = `<div class="error-msg">Erreur Open-Meteo : ${e.message}</div>`;
+    setDot(dotId, 'err');
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  RAFRAÎCHISSEMENT GLOBAL
+// ══════════════════════════════════════════════════════
+async function rafraichirTout() {
+  if (isLoading) return;
+  isLoading = true;
+  const btn = document.getElementById('btn-refresh');
+  btn.classList.add('loading'); btn.disabled = true;
+  document.getElementById('header-date').textContent = dateJour();
+
+  await Promise.all([
+    // ── Montréal ──
+    chargerMarine(EC_MARINE_MTL_TRV, {
+      bodyMarine: 'body-marine-mtl', dotMarine: 'dot-marine-mtl',
+      bodyExtended: 'body-extended-mtl',
+      srcEl: 'src-marine-mtl',
+      alertBanner: 'alert-banner-mtl', alertTitle: 'alert-title-mtl', alertBody: 'alert-body-mtl',
+    }),
+    chargerIWLS('mtl', 'body-iwls-mtl', 'dot-iwls-mtl'),
+    chargerOpenMeteo('mtl', 'body-hourly-mtl', 'dot-hourly-mtl'),
+
+    // ── Lachine ──
+    chargerMarine(EC_MARINE_CRN_MTL, {
+      bodyMarine: 'body-marine-lac', dotMarine: 'dot-marine-lac',
+      bodyExtended: 'body-extended-lac',
+      srcEl: 'src-marine-lac',
+      alertBanner: 'alert-banner-lac', alertTitle: 'alert-title-lac', alertBody: 'alert-body-lac',
+    }),
+    chargerIWLS('lac', 'body-iwls-lac', 'dot-iwls-lac'),
+    chargerOpenMeteo('lac', 'body-hourly-lac', 'dot-hourly-lac'),
+
+    // ── Sorel-Tracy ──
+    chargerMarine(EC_MARINE_MTL_TRV, {
+      bodyMarine: 'body-marine-sor', dotMarine: 'dot-marine-sor',
+      bodyExtended: 'body-extended-sor',
+      srcEl: 'src-marine-sor',
+      alertBanner: 'alert-banner-sor', alertTitle: 'alert-title-sor', alertBody: 'alert-body-sor',
+    }),
+    chargerIWLS('sor', 'body-iwls-sor', 'dot-iwls-sor'),
+    chargerOpenMeteo('sor', 'body-hourly-sor', 'dot-hourly-sor'),
+  ]);
+
+  btn.classList.remove('loading'); btn.disabled = false;
+  isLoading = false;
+  document.getElementById('last-update').textContent =
+    'Mis à jour : ' + new Date().toLocaleTimeString('fr-CA',
+      { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+document.getElementById('header-date').textContent = dateJour();
+rafraichirTout();
+</script>
+</body>
+</html>
