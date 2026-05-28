@@ -728,6 +728,7 @@ function omUrl(key) {
   return `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}`
     + `&current=temperature_2m,windspeed_10m,winddirection_10m,windgusts_10m,weathercode,precipitation`
     + `&hourly=temperature_2m,windspeed_10m,winddirection_10m,windgusts_10m,precipitation_probability,weathercode`
+    + `&daily=temperature_2m_max,temperature_2m_min`
     + `&wind_speed_unit=kn&timezone=America%2FToronto&forecast_days=2`;
 }
 
@@ -746,6 +747,7 @@ const KMH_TO_KT = 0.539957;
 let iwlsIdCache   = {};
 let iwlsListCache = null;
 let isLoading     = false;
+let omDailyCache  = {};
 
 // ══════════════════════════════════════════════════════
 //  NAVIGATION
@@ -903,8 +905,11 @@ async function chargerMarine(url, cfg) {
           <div class="cell-value sm" style="color:var(--accent2);line-height:1.4">${wind || '—'}</div>
         </div>
         ${visi ? `<div class="data-cell wide"><div class="cell-label">Visibilité / Précipitations</div><div class="cell-value na" style="font-size:12px;padding-top:4px">${visi}</div></div>` : ''}
+        <div class="data-cell" id="temp-max-${cfg.omKey}"><div class="cell-label">Max. aujourd'hui</div><div class="skeleton"></div></div>
+        <div class="data-cell" id="temp-min-${cfg.omKey}"><div class="cell-label">Min. aujourd'hui</div><div class="skeleton"></div></div>
       </div>
       ${wc?.periodOfCoverage?.fr ? `<div class="forecast-text-block"><strong>Période :</strong> ${wc.periodOfCoverage.fr}</div>` : ''}`;
+    renderTempRange(cfg.omKey);
 
     // étendues — injectées dans body-extended à l'intérieur de la carte marine
     const ext = p.extendedForecast?.locations?.[0]?.weatherCondition?.forecastPeriods || [];
@@ -952,6 +957,16 @@ function degToCardFr(deg) {
   return dirs[Math.round(deg / 22.5) % 16];
 }
 
+function renderTempRange(key) {
+  const elMax = document.getElementById('temp-max-' + key);
+  const elMin = document.getElementById('temp-min-' + key);
+  if (!elMax || !elMin) return;
+  const d = omDailyCache[key];
+  if (!d) return;
+  elMax.innerHTML = cellHTML("Max. aujourd'hui", d.max, '°C', 'warm');
+  elMin.innerHTML = cellHTML("Min. aujourd'hui", d.min, '°C', 'blue');
+}
+
 // ══════════════════════════════════════════════════════
 //  OPEN-METEO (horaires + actuel)
 // ══════════════════════════════════════════════════════
@@ -964,6 +979,14 @@ async function chargerOpenMeteo(key, bodyId, dotId) {
 
     const cur = d.current;
     const H   = d.hourly;
+
+    if (d.daily) {
+      omDailyCache[key] = {
+        max: d.daily.temperature_2m_max[0]?.toFixed(1),
+        min: d.daily.temperature_2m_min[0]?.toFixed(1),
+      };
+      renderTempRange(key);
+    }
 
     // Index de l'heure actuelle dans le tableau horaire
     const nowHourStr = new Date().toLocaleString('sv-SE', { timeZone: 'America/Toronto' })
@@ -1027,6 +1050,7 @@ async function chargerOpenMeteo(key, bodyId, dotId) {
 async function rafraichirTout() {
   if (isLoading) return;
   isLoading = true;
+  omDailyCache = {};
   const btn = document.getElementById('btn-refresh');
   btn.classList.add('loading'); btn.disabled = true;
   document.getElementById('header-date').textContent = dateJour();
@@ -1038,6 +1062,7 @@ async function rafraichirTout() {
       bodyExtended: 'body-extended-mtl',
       srcEl: 'src-marine-mtl',
       alertBanner: 'alert-banner-mtl', alertTitle: 'alert-title-mtl', alertBody: 'alert-body-mtl',
+      omKey: 'mtl',
     }),
     chargerIWLS('mtl', 'body-iwls-mtl', 'dot-iwls-mtl'),
     chargerOpenMeteo('mtl', 'body-hourly-mtl', 'dot-hourly-mtl'),
@@ -1048,6 +1073,7 @@ async function rafraichirTout() {
       bodyExtended: 'body-extended-lac',
       srcEl: 'src-marine-lac',
       alertBanner: 'alert-banner-lac', alertTitle: 'alert-title-lac', alertBody: 'alert-body-lac',
+      omKey: 'lac',
     }),
     chargerIWLS('lac', 'body-iwls-lac', 'dot-iwls-lac'),
     chargerOpenMeteo('lac', 'body-hourly-lac', 'dot-hourly-lac'),
@@ -1058,6 +1084,7 @@ async function rafraichirTout() {
       bodyExtended: 'body-extended-sor',
       srcEl: 'src-marine-sor',
       alertBanner: 'alert-banner-sor', alertTitle: 'alert-title-sor', alertBody: 'alert-body-sor',
+      omKey: 'sor',
     }),
     chargerIWLS('sor', 'body-iwls-sor', 'dot-iwls-sor'),
     chargerOpenMeteo('sor', 'body-hourly-sor', 'dot-hourly-sor'),
